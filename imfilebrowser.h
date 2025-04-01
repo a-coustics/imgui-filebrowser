@@ -620,7 +620,7 @@ inline void ImGui::FileBrowser::Display()
 
     // browse files in a child window
 
-    float reserveHeight = GetFrameHeightWithSpacing();
+    float reserveHeight = 3*GetFrameHeightWithSpacing();
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
         reserveHeight += GetFrameHeightWithSpacing();
@@ -764,6 +764,10 @@ inline void ImGui::FileBrowser::Display()
 
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
+        // ImGui::Text("%s", currentDirectory_.string().c_str());
+        ImGui::Text("File Name");
+        ImGui::SameLine();
+        // ImGui::Text("%s", shouldSetNewDir ? "New Dir" : "No dir change"); ImGui::SameLine();
         PushID(this);
         ScopeGuard popTextID([] { PopID(); });
 
@@ -811,6 +815,48 @@ inline void ImGui::FileBrowser::Display()
         }
     }
 
+    if(!typeFilters_.empty())
+    {
+        ImGui::Text("File Type: ");
+        SameLine();
+        PushItemWidth(8 * GetFontSize());
+        if(BeginCombo(
+            "##type_filters", typeFilters_[typeFilterIndex_].c_str()))
+        {
+            ScopeGuard guard([&] { EndCombo(); });
+
+            for(size_t i = 0; i < typeFilters_.size(); ++i)
+            {
+                bool selected = i == typeFilterIndex_;
+                if(Selectable(typeFilters_[i].c_str(), selected) && !selected)
+                {
+                    typeFilterIndex_ = static_cast<unsigned int>(i);
+                }
+            }
+        }
+        PopItemWidth();
+    }
+
+    const float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
+
+    static float CloseButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
+    float pos = CloseButtonWidth + ItemSpacing;
+    ImGui::Text(" ");
+    ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+    const bool shouldClose =
+        Button("cancel") || shouldClose_ ||
+        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
+        IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+        IsKeyPressed(ImGuiKey_Escape));
+    if(shouldClose)
+    {
+        CloseCurrentPopup();
+    }
+    CloseButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+    
+    static float OKButtonWidth = 100.0f;
+    pos += OKButtonWidth + ItemSpacing;
+    ImGui::SameLine(ImGui::GetWindowWidth() - pos);
     const bool isEnterPressed =
         (flags_ & ImGuiFileBrowserFlags_ConfirmOnEnter) &&
         IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
@@ -834,22 +880,45 @@ inline void ImGui::FileBrowser::Display()
             CloseCurrentPopup();
         }
     }
+    OKButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
 
-    SameLine();
 
-    const bool shouldClose =
-        Button("cancel") || shouldClose_ ||
-        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
-        IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-        IsKeyPressed(ImGuiKey_Escape));
-    if(shouldClose)
-    {
-        CloseCurrentPopup();
-    }
+    // const bool isEnterPressed =
+    //     (flags_ & ImGuiFileBrowserFlags_ConfirmOnEnter) &&
+    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+    //     IsKeyPressed(ImGuiKey_Enter);
+    // if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory))
+    // {
+    //     if((Button(" ok ") || isEnterPressed) && !selectedFilenames_.empty())
+    //     {
+    //         isOk_ = true;
+    //         CloseCurrentPopup();
+    //     }
+    // }
+    // else
+    // {
+    //     if(Button(" ok ") || isEnterPressed)
+    //     {
+    //         isOk_ = true;
+    //         CloseCurrentPopup();
+    //     }
+    // }
+
+    // SameLine();
+
+    // const bool shouldClose =
+    //     Button("cancel") || shouldClose_ ||
+    //     ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
+    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+    //     IsKeyPressed(ImGuiKey_Escape));
+    // if(shouldClose)
+    // {
+    //     CloseCurrentPopup();
+    // }
 
     if(!statusStr_.empty() && !(flags_ & ImGuiFileBrowserFlags_NoStatusBar))
     {
-        SameLine();
+        // SameLine();
         Text("%s", statusStr_.c_str());
         if (ImGui::IsItemHovered())
         {
@@ -860,27 +929,11 @@ inline void ImGui::FileBrowser::Display()
             ImGui::EndTooltip();
         }
     }
-
-    if(!typeFilters_.empty())
+    else
     {
-        SameLine();
-        PushItemWidth(8 * GetFontSize());
-        if(BeginCombo(
-            "##type_filters", typeFilters_[typeFilterIndex_].c_str()))
-        {
-            ScopeGuard guard([&] { EndCombo(); });
-
-            for(size_t i = 0; i < typeFilters_.size(); ++i)
-            {
-                bool selected = i == typeFilterIndex_;
-                if(Selectable(typeFilters_[i].c_str(), selected) && !selected)
-                {
-                    typeFilterIndex_ = static_cast<unsigned int>(i);
-                }
-            }
-        }
-        PopItemWidth();
+        Text("No Status");
     }
+
 }
 
 inline bool ImGui::FileBrowser::HasSelected() const noexcept
