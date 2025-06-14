@@ -116,6 +116,8 @@ namespace ImGui
         // this function will pre-fill the input dialog with a filename.
         void SetInputName(std::string_view input);
 
+        int SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file);
+
     private:
 
         template <class Functor>
@@ -208,6 +210,38 @@ namespace ImGui
         bool              setFocusToEditDir_;
         std::vector<char> currDirBuffer_;
 
+        ImFont* icon_font = nullptr;
+        uint32_t codept_refresh = 0xF021; // Refresh
+        uint32_t codept_edit = 0xF044; // Pen in Box (Edit)
+        uint32_t codept_folder = 0xF07B; // Folder
+        uint32_t codept_file = 0xF15B; // File        
+
+        std::string CodePointToUTF8(uint32_t cp)
+        {
+            std::string out;
+            if (cp <= 0x7F)
+                out += static_cast<char>(cp);
+            else if (cp <= 0x7FF)
+            {
+                out += static_cast<char>(0xC0 | (cp >> 6));
+                out += static_cast<char>(0x80 | (cp & 0x3F));
+            }
+            else if (cp <= 0xFFFF)
+            {
+                out += static_cast<char>(0xE0 | (cp >> 12));
+                out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+                out += static_cast<char>(0x80 | (cp & 0x3F));
+            }
+            else if (cp <= 0x10FFFF)
+            {
+                out += static_cast<char>(0xF0 | (cp >> 18));
+                out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+                out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+                out += static_cast<char>(0x80 | (cp & 0x3F));
+            }
+            return out;
+        }
+
 #ifdef _WIN32
         std::uint32_t drives_;
 #endif
@@ -236,6 +270,8 @@ inline ImGui::FileBrowser::FileBrowser(ImGuiFileBrowserFlags flags, std::filesys
     {
         newDirNameBuffer_.resize(32, '\0');
     }
+
+    icon_font = nullptr;
 
     SetTitle("file browser");
     SetDirectory(defaultDirectory_);
@@ -528,8 +564,12 @@ inline void ImGui::FileBrowser::Display()
         if(flags_ & ImGuiFileBrowserFlags_EditPathString)
         {
             SameLine();
-
-            if(SmallButton("#"))
+            std::string edit_icon_str = "#";
+            if (this->icon_font) edit_icon_str = CodePointToUTF8(this->codept_edit);
+            if (this->icon_font) ImGui::PushFont(this->icon_font);
+            bool button = SmallButton(edit_icon_str.c_str());
+            if (this->icon_font) ImGui::PopFont();
+            if(button)
             {
                 const auto currDirStr = u8StrToStr(currentDirectory_.u8string());
                 currDirBuffer_.resize(currDirStr.size() + 1);
@@ -547,12 +587,17 @@ inline void ImGui::FileBrowser::Display()
     }
 
     SameLine();
-    if(SmallButton("*"))
+    std::string refresh_icon_str = "*";
+    if (this->icon_font) refresh_icon_str = CodePointToUTF8(this->codept_refresh);
+    if (this->icon_font) ImGui::PushFont(this->icon_font);
+    bool button = SmallButton(refresh_icon_str.c_str());
+    if (this->icon_font) ImGui::PopFont();
+    if(button)
     {
 #ifdef _WIN32
         drives_ = GetDrivesBitMask();
 #endif
-
+        
         UpdateFileRecords();
 
         std::set<std::filesystem::path> newSelectedFilenames;
@@ -936,6 +981,17 @@ inline void ImGui::FileBrowser::Display()
 
 }
 
+inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0)
+{
+    this->icon_font = font;
+    if (cp_refresh) this->codept_refresh = cp_refresh;
+    if (cp_edit) this->codept_edit = cp_edit;
+    if (cp_folder) this->codept_folder = cp_folder;
+    if (cp_file) this->codept_file = cp_file;
+    return 0;
+}
+
+
 inline bool ImGui::FileBrowser::HasSelected() const noexcept
 {
     return isOk_;
@@ -1079,6 +1135,14 @@ inline void ImGui::FileBrowser::ToolTip(const std::string_view &s)
 
 inline void ImGui::FileBrowser::UpdateFileRecords()
 {
+    std::string dir_str = "[D]";
+    std::string file_str = "[F]";
+    // if (this->icon_font)
+    // {
+    //     dir_str = this->CodePointToUTF8(this->codept_folder);
+    //     file_str = this->CodePointToUTF8(this->codept_file);
+    // }
+
     fileRecords_ = { FileRecord{ true, "..", "[D] ..", "" } };
 
     const auto getDirectoryIterator = [&]() -> std::filesystem::directory_iterator
@@ -1124,6 +1188,7 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
 
             rcd.extension = p.path().filename().extension();
             rcd.showName = (rcd.isDir ? "[D] " : "[F] ") + u8StrToStr(p.path().filename().u8string());
+
         }
         catch(...)
         {
