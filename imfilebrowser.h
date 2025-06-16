@@ -211,10 +211,10 @@ namespace ImGui
         std::vector<char> currDirBuffer_;
 
         ImFont* icon_font = nullptr;
-        uint32_t codept_refresh = 0xF021; // Refresh
-        uint32_t codept_edit = 0xF044; // Pen in Box (Edit)
-        uint32_t codept_folder = 0xF07B; // Folder
-        uint32_t codept_file = 0xF15B; // File        
+        ImWchar codept_refresh = 0xF021; // Refresh
+        ImWchar codept_edit = 0xF044; // Pen in Box (Edit)
+        ImWchar codept_folder = 0xF07B; // Folder
+        ImWchar codept_file = 0xF016; // File        
 
         std::string CodePointToUTF8(uint32_t cp)
         {
@@ -1137,13 +1137,14 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
 {
     std::string dir_str = "[D]";
     std::string file_str = "[F]";
-    // if (this->icon_font)
-    // {
-    //     dir_str = this->CodePointToUTF8(this->codept_folder);
-    //     file_str = this->CodePointToUTF8(this->codept_file);
-    // }
+    if (this->icon_font)
+    {
+        dir_str = this->CodePointToUTF8(this->codept_folder);
+        file_str = this->CodePointToUTF8(this->codept_file);
+    }
 
-    fileRecords_ = { FileRecord{ true, "..", "[D] ..", "" } };
+    std::string dDotDot = dir_str + " ..";
+    fileRecords_ = { FileRecord{ true, "..", dDotDot, "" } };
 
     const auto getDirectoryIterator = [&]() -> std::filesystem::directory_iterator
     {
@@ -1187,7 +1188,7 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
             }
 
             rcd.extension = p.path().filename().extension();
-            rcd.showName = (rcd.isDir ? "[D] " : "[F] ") + u8StrToStr(p.path().filename().u8string());
+            rcd.showName = (rcd.isDir ? dir_str + " " : file_str + " ") + u8StrToStr(p.path().filename().u8string());
 
         }
         catch(...)
