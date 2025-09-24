@@ -851,6 +851,14 @@ inline void ImGui::FileBrowser::Display()
     {
         SameLine();
         Text("%s", statusStr_.c_str());
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();            
+            ImGui::PushTextWrapPos(300.0f);
+            ImGui::Text("%s", statusStr_.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
     }
 
     if(!typeFilters_.empty())
@@ -1020,7 +1028,24 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
 {
     fileRecords_ = { FileRecord{ true, "..", "[D] ..", "" } };
 
-    for(auto &p : std::filesystem::directory_iterator(currentDirectory_))
+    const auto getDirectoryIterator = [&]() -> std::filesystem::directory_iterator
+    {
+        try
+        {            
+            return std::filesystem::directory_iterator(currentDirectory_);
+        }
+        catch (const std::filesystem::filesystem_error& err)
+        {            
+            statusStr_ = std::string("error: ") + err.what();
+            if (!(flags_ & ImGuiFileBrowserFlags_SkipItemsCausingError))
+            {
+                throw;
+            }
+            return {};
+        }
+    };
+
+    for(auto &p : getDirectoryIterator())
     {
         FileRecord rcd;
         try
