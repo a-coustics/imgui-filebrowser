@@ -828,7 +828,11 @@ inline void ImGui::FileBrowser::Display()
         {
             if(inputNameBuffer_[0] != '\0')
             {
+<<<<<<< HEAD
                 selectedFilenames_ = { u8StrToPath(inputNameBuffer_.data()) };
+=======
+            selectedFilenames_ = { u8StrToPath(inputNameBuffer_.data()) };
+>>>>>>> af66454 (Merge upstream official master 47a1884524d6a3df5d99f70ecc82e1ed0ccd26cf)
             }
             else
             {
@@ -928,27 +932,6 @@ inline void ImGui::FileBrowser::Display()
     OKButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
 
 
-    // const bool isEnterPressed =
-    //     (flags_ & ImGuiFileBrowserFlags_ConfirmOnEnter) &&
-    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-    //     IsKeyPressed(ImGuiKey_Enter);
-    // if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory))
-    // {
-    //     if((Button(" ok ") || isEnterPressed) && !selectedFilenames_.empty())
-    //     {
-    //         isOk_ = true;
-    //         CloseCurrentPopup();
-    //     }
-    // }
-    // else
-    // {
-    //     if(Button(" ok ") || isEnterPressed)
-    //     {
-    //         isOk_ = true;
-    //         CloseCurrentPopup();
-    //     }
-    // }
-
     // SameLine();
 
     // const bool shouldClose =
@@ -972,13 +955,36 @@ inline void ImGui::FileBrowser::Display()
             ImGui::Text("%s", statusStr_.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
+<<<<<<< HEAD
         }
+=======
+        }        
+>>>>>>> af66454 (Merge upstream official master 47a1884524d6a3df5d99f70ecc82e1ed0ccd26cf)
     }
     else
     {
         Text("No Status");
     }
 
+    if(!typeFilters_.empty())
+    {
+        SameLine();
+        PushItemWidth(8 * GetFontSize());
+        if(BeginCombo(
+            "##type_filters", typeFilters_[typeFilterIndex_].c_str()))
+        {
+            ScopeGuard guard([&] { EndCombo(); });
+
+            for(size_t i = 0; i < typeFilters_.size(); ++i)
+            {
+                bool selected = i == typeFilterIndex_;
+                if(Selectable(typeFilters_[i].c_str(), selected) && !selected)
+                {
+                    typeFilterIndex_ = static_cast<unsigned int>(i);
+                }
+            }
+        }
+        PopItemWidth();
 }
 
 inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0)
