@@ -116,7 +116,9 @@ namespace ImGui
         // this function will pre-fill the input dialog with a filename.
         void SetInputName(std::string_view input);
 
-        int SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file);
+        inline int SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0);
+
+        // int SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file);
 
     private:
 
@@ -977,9 +979,11 @@ inline void ImGui::FileBrowser::Display()
             }
         }
         PopItemWidth();
+    }
 }
 
-inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0)
+inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file)
+//inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0)
 {
     this->icon_font = font;
     if (cp_refresh) this->codept_refresh = cp_refresh;
