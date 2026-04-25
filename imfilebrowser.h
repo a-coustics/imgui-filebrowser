@@ -828,11 +828,7 @@ inline void ImGui::FileBrowser::Display()
         {
             if(inputNameBuffer_[0] != '\0')
             {
-<<<<<<< HEAD
                 selectedFilenames_ = { u8StrToPath(inputNameBuffer_.data()) };
-=======
-            selectedFilenames_ = { u8StrToPath(inputNameBuffer_.data()) };
->>>>>>> af66454 (Merge upstream official master 47a1884524d6a3df5d99f70ecc82e1ed0ccd26cf)
             }
             else
             {
@@ -955,11 +951,7 @@ inline void ImGui::FileBrowser::Display()
             ImGui::Text("%s", statusStr_.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
-<<<<<<< HEAD
         }
-=======
-        }        
->>>>>>> af66454 (Merge upstream official master 47a1884524d6a3df5d99f70ecc82e1ed0ccd26cf)
     }
     else
     {
