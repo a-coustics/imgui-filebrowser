@@ -118,8 +118,6 @@ namespace ImGui
 
         inline int SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0);
 
-        // int SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file);
-
     private:
 
         template <class Functor>
@@ -955,35 +953,15 @@ inline void ImGui::FileBrowser::Display()
             ImGui::EndTooltip();
         }
     }
-    else
-    {
-        Text("No Status");
-    }
+    // else
+    // {
+    //     Text("No Status");
+    // }
 
-    if(!typeFilters_.empty())
-    {
-        SameLine();
-        PushItemWidth(8 * GetFontSize());
-        if(BeginCombo(
-            "##type_filters", typeFilters_[typeFilterIndex_].c_str()))
-        {
-            ScopeGuard guard([&] { EndCombo(); });
 
-            for(size_t i = 0; i < typeFilters_.size(); ++i)
-            {
-                bool selected = i == typeFilterIndex_;
-                if(Selectable(typeFilters_[i].c_str(), selected) && !selected)
-                {
-                    typeFilterIndex_ = static_cast<unsigned int>(i);
-                }
-            }
-        }
-        PopItemWidth();
-    }
 }
 
 inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file)
-//inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0)
 {
     this->icon_font = font;
     if (cp_refresh) this->codept_refresh = cp_refresh;
