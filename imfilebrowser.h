@@ -120,10 +120,6 @@ namespace ImGui
         // this function will pre-fill the input dialog with a filename.
         void SetInputName(std::string_view input);
 
-        // AC Icon Font
-        ImFont* LoadIconFont(); //ImGuiContext* ctx);
-        // AC Icon Font
-
     private:
 
         template <class Functor>
@@ -260,7 +256,11 @@ namespace ImGui
 
         bool SmallButtonIcon(std::string label, ImWchar icon);
         bool SelectableIcon(const char* label, bool selected, ImGuiSelectableFlags flags, const bool isDir);
+
     public:        
+        // AC Icon Font
+        ImFont* LoadIconFont(); //ImGuiContext* ctx);
+        // AC Icon Font
 
    
 // AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -711,8 +711,7 @@ inline void ImGui::FileBrowser::Display()
 #else
             const ImGuiSelectableFlags selectableFlag = ImGuiSelectableFlags_DontClosePopups;
 #endif
-            // ImGui::SameLine(); 
-            if (SelectableIcon(rsc.showName.c_str(), selected, selectableFlag, rsc.isDir))
+            if(SelectableIcon(rsc.showName.c_str(), selected, selectableFlag, rsc.isDir))
             {
                 const bool wantDir = flags_ & ImGuiFileBrowserFlags_SelectDirectory;
                 const bool canSelect = rsc.name != ".." && rsc.isDir == wantDir;
@@ -818,10 +817,8 @@ inline void ImGui::FileBrowser::Display()
 
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
-        // ImGui::Text("%s", currentDirectory_.string().c_str());
         ImGui::Text("File Name");
         ImGui::SameLine();
-        // ImGui::Text("%s", shouldSetNewDir ? "New Dir" : "No dir change"); ImGui::SameLine();
         PushID(this);
         ScopeGuard popTextID([] { PopID(); });
 
@@ -894,23 +891,26 @@ inline void ImGui::FileBrowser::Display()
     const float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
 
     static float CloseButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
-    float pos = CloseButtonWidth + ItemSpacing;
-    ImGui::Text(" ");
-    ImGui::SameLine(ImGui::GetWindowWidth() - pos);
-    const bool shouldClose =
-        Button("cancel") || shouldClose_ ||
-        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
-        IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-        IsKeyPressed(ImGuiKey_Escape));
-    if(shouldClose)
-    {
-        CloseCurrentPopup();
-    }
-    CloseButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
-    
     static float OKButtonWidth = 100.0f;
-    pos += OKButtonWidth + ItemSpacing;
-    ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+    float widthNeeded = OKButtonWidth + ImGui::GetStyle().ItemSpacing.x + CloseButtonWidth;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
+
+    // float pos = CloseButtonWidth + ItemSpacing;
+    // ImGui::Text(" ");
+    // ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+    // const bool shouldClose =
+    //     Button("cancel") || shouldClose_ ||
+    //     ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
+    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+    //     IsKeyPressed(ImGuiKey_Escape));
+    // if(shouldClose)
+    // {
+    //     CloseCurrentPopup();
+    // }
+    // CloseButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+    
+    //pos += OKButtonWidth + ItemSpacing;
+    // ImGui::SameLine(ImGui::GetWindowWidth() - pos);
     const bool isEnterPressed =
         (flags_ & ImGuiFileBrowserFlags_ConfirmOnEnter) &&
         IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
@@ -934,24 +934,23 @@ inline void ImGui::FileBrowser::Display()
             CloseCurrentPopup();
         }
     }
-    OKButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+    // OKButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
 
 
-    // SameLine();
+    SameLine();
 
-    // const bool shouldClose =
-    //     Button("cancel") || shouldClose_ ||
-    //     ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
-    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-    //     IsKeyPressed(ImGuiKey_Escape));
-    // if(shouldClose)
-    // {
-    //     CloseCurrentPopup();
-    // }
+    const bool shouldClose =
+        Button("cancel") || shouldClose_ ||
+        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
+        IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+        IsKeyPressed(ImGuiKey_Escape));
+    if(shouldClose)
+    {
+        CloseCurrentPopup();
+    }
 
     if(!statusStr_.empty() && !(flags_ & ImGuiFileBrowserFlags_NoStatusBar))
     {
-        // SameLine();
         Text("%s", statusStr_.c_str());
         if (ImGui::IsItemHovered())
         {
@@ -962,10 +961,10 @@ inline void ImGui::FileBrowser::Display()
             ImGui::EndTooltip();
         }
     }
-    // else
-    // {
-    //     Text("No Status");
-    // }
+    else
+    {
+        Text("No Status");
+    }
 
 
 }
