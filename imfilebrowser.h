@@ -259,7 +259,7 @@ namespace ImGui
         }
 
         bool SmallButtonIcon(std::string label, ImWchar icon);
-
+        bool SelectableIcon(const char* label, bool selected, ImGuiSelectableFlags flags, const bool isDir);
     public:        
 
    
@@ -681,10 +681,6 @@ inline void ImGui::FileBrowser::Display()
     }
 
     {
-
-        std::string dir_str = this->CodePointToUTF8(this->codept_folder);
-        std::string file_str = this->CodePointToUTF8(this->codept_file);
-
         BeginChild("ch", ImVec2(0, -reserveHeight), true,
                    (flags_ & ImGuiFileBrowserFlags_NoModal) ? ImGuiWindowFlags_AlwaysHorizontalScrollbar : 0);
         ScopeGuard endChild([] { EndChild(); });
@@ -715,13 +711,8 @@ inline void ImGui::FileBrowser::Display()
 #else
             const ImGuiSelectableFlags selectableFlag = ImGuiSelectableFlags_DontClosePopups;
 #endif
-            bool bSelectable = false;
-            ImGui::SetNextItemAllowOverlap(); 
-            if (this->icon_font) ImGui::PushFont(this->icon_font);
-            if (rsc.isDir) ImGui::Text("%s", dir_str.c_str()); else ImGui::Text("%s", file_str.c_str());
-            if (this->icon_font) ImGui::PopFont();
-            ImGui::SameLine(); 
-            if (Selectable(rsc.showName.c_str(), selected, selectableFlag))
+            // ImGui::SameLine(); 
+            if (SelectableIcon(rsc.showName.c_str(), selected, selectableFlag, rsc.isDir))
             {
                 const bool wantDir = flags_ & ImGuiFileBrowserFlags_SelectDirectory;
                 const bool canSelect = rsc.name != ".." && rsc.isDir == wantDir;
@@ -1122,19 +1113,7 @@ inline void ImGui::FileBrowser::ToolTip(const std::string_view &s)
 
 inline void ImGui::FileBrowser::UpdateFileRecords()
 {
-    std::string dir_str = "[D]";
-    std::string file_str = "[F]";
-    static bool bPrintFirst = true;    
-    if (this->icon_font)
-    {
-        dir_str = "";
-        file_str = "";
-    }
-
-              
-
-    std::string dDotDot = dir_str + " ..";
-    fileRecords_ = { FileRecord{ true, "..", dDotDot, "" } };
+    fileRecords_ = { FileRecord{ true, "..", "[D] ..", "" } };
 
     const auto getDirectoryIterator = [&]() -> std::filesystem::directory_iterator
     {
@@ -1178,7 +1157,7 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
             }
 
             rcd.extension = p.path().filename().extension();
-            rcd.showName = (rcd.isDir ? dir_str + " " : file_str + " ") + u8StrToStr(p.path().filename().u8string());
+            rcd.showName = (rcd.isDir ? "[D] " : "[F] ") + u8StrToStr(p.path().filename().u8string());
         }
         catch(...)
         {
@@ -1524,5 +1503,25 @@ bool ImGui::FileBrowser::SmallButtonIcon(std::string label, ImWchar icon)
     }
     return button;    
 }   
+
+bool ImGui::FileBrowser::SelectableIcon(const char* labelIn, bool selected, ImGuiSelectableFlags flags, const bool isDir)
+{
+    const std::string dir_str = this->CodePointToUTF8(this->codept_folder);
+    const std::string file_str = this->CodePointToUTF8(this->codept_file);
+
+    bool bSelectable = false;
+    ImGui::SetNextItemAllowOverlap(); 
+    if (this->icon_font) ImGui::PushFont(this->icon_font);
+    if (isDir) ImGui::Text("%s", dir_str.c_str()); else ImGui::Text("%s", file_str.c_str());
+    if (this->icon_font) ImGui::PopFont();
+    ImGui::SameLine(); 
+
+    std::string label = labelIn;
+    if (this->icon_font)
+    {
+        label = label.substr(4);
+    }
+    return Selectable(label.c_str(), selected, flags);
+}
         
-// AC Icon FOnt ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
