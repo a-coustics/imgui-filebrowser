@@ -582,6 +582,7 @@ inline void ImGui::FileBrowser::Display()
         if(flags_ & ImGuiFileBrowserFlags_EditPathString)
         {
             SameLine();
+
             if(SmallButtonIcon("#", codept_edit))
             {
                 const auto currDirStr = u8StrToStr(currentDirectory_.u8string());
@@ -636,7 +637,6 @@ inline void ImGui::FileBrowser::Display()
     if(flags_ & ImGuiFileBrowserFlags_CreateNewDir)
     {
         SameLine();
-        // codept_folder_new
         if(SmallButtonIcon("+", codept_folder_new))
         {
             OpenPopup(openNewDirLabel_.c_str());
@@ -674,7 +674,7 @@ inline void ImGui::FileBrowser::Display()
 
     // browse files in a child window
 
-    float reserveHeight = 3*GetFrameHeightWithSpacing();
+    float reserveHeight = GetFrameHeightWithSpacing() * 2;
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
         reserveHeight += GetFrameHeightWithSpacing();
@@ -1179,7 +1179,6 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
 
             rcd.extension = p.path().filename().extension();
             rcd.showName = (rcd.isDir ? dir_str + " " : file_str + " ") + u8StrToStr(p.path().filename().u8string());
-
         }
         catch(...)
         {
