@@ -1,8 +1,10 @@
 ﻿#pragma once
 
+// #include "helperlib.h"
+// #include "imgui.h"
 #include <algorithm>
-#include <array>
-#include <cctype>
+// #include <array>
+// #include <cctype>
 #include <cstring>
 #include <filesystem>
 #include <set>
@@ -13,6 +15,10 @@
 #ifndef IMGUI_VERSION
 #   error "include imgui.h before this header"
 #endif
+
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "res/fa7/fa7_2_solid.h"
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using ImGuiFileBrowserFlags = std::uint32_t;
 
@@ -116,7 +122,10 @@ namespace ImGui
         // this function will pre-fill the input dialog with a filename.
         void SetInputName(std::string_view input);
 
-        inline int SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0);
+        // AC Icon Font
+        // inline int SetIconFont(ImFont* font, uint32_t cp_refresh = 0, uint32_t cp_edit = 0, uint32_t cp_folder = 0, uint32_t cp_file = 0);
+        ImFont* LoadIconFont(); //ImGuiContext* ctx);
+        // AC Icon Font
 
     private:
 
@@ -210,11 +219,22 @@ namespace ImGui
         bool              setFocusToEditDir_;
         std::vector<char> currDirBuffer_;
 
-        ImFont* icon_font = nullptr;
+#ifdef _WIN32
+        std::uint32_t drives_;
+#endif
+
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+        // static inline ImFont* icon_font = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fa_regular_compressed_data, fa_regular_compressed_size);
+
+        inline static ImFont* icon_font = nullptr;
+        inline static bool bIconFontLoaded = false;
+
+        // ImFont* icon_font = nullptr;
+        // code points for font awesome
         ImWchar codept_refresh = 0xF021; // Refresh
         ImWchar codept_edit = 0xF044; // Pen in Box (Edit)
         ImWchar codept_folder = 0xF07B; // Folder
-        ImWchar codept_file = 0xF016; // File        
+        ImWchar codept_file = 0xF016; // File   
 
         std::string CodePointToUTF8(uint32_t cp)
         {
@@ -242,9 +262,11 @@ namespace ImGui
             return out;
         }
 
-#ifdef _WIN32
-        std::uint32_t drives_;
-#endif
+    public:        
+
+   
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
     };
 } // namespace ImGui
 
@@ -270,8 +292,6 @@ inline ImGui::FileBrowser::FileBrowser(ImGuiFileBrowserFlags flags, std::filesys
     {
         newDirNameBuffer_.resize(32, '\0');
     }
-
-    icon_font = nullptr;
 
     SetTitle("file browser");
     SetDirectory(defaultDirectory_);
@@ -444,7 +464,7 @@ inline void ImGui::FileBrowser::Display()
         {
             SetKeyboardFocusHere();
         }
-
+        
         PushItemWidth(-1);
         const bool enter = InputText(
             "##directory", currDirBuffer_.data(), currDirBuffer_.size(),
@@ -588,7 +608,7 @@ inline void ImGui::FileBrowser::Display()
 
     SameLine();
     std::string refresh_icon_str = "*";
-    if (this->icon_font) refresh_icon_str = CodePointToUTF8(this->codept_refresh);
+    if (this->icon_font) refresh_icon_str = CodePointToUTF8(0xF022); //CodePointToUTF8(this->codept_refresh);
     if (this->icon_font) ImGui::PushFont(this->icon_font);
     bool button = SmallButton(refresh_icon_str.c_str());
     if (this->icon_font) ImGui::PopFont();
@@ -621,7 +641,7 @@ inline void ImGui::FileBrowser::Display()
     }
     else
     {
-        ToolTip("Refresh");
+        ToolTip("Refresh *****");
     }
 
     bool focusOnInputText = false;
@@ -672,6 +692,10 @@ inline void ImGui::FileBrowser::Display()
     }
 
     {
+
+        std::string dir_str = this->CodePointToUTF8(this->codept_folder);
+        std::string file_str = this->CodePointToUTF8(this->codept_file);
+
         BeginChild("ch", ImVec2(0, -reserveHeight), true,
                    (flags_ & ImGuiFileBrowserFlags_NoModal) ? ImGuiWindowFlags_AlwaysHorizontalScrollbar : 0);
         ScopeGuard endChild([] { EndChild(); });
@@ -702,8 +726,13 @@ inline void ImGui::FileBrowser::Display()
 #else
             const ImGuiSelectableFlags selectableFlag = ImGuiSelectableFlags_DontClosePopups;
 #endif
-
-            if(Selectable(rsc.showName.c_str(), selected, selectableFlag))
+            bool bSelectable = false;
+            ImGui::SetNextItemAllowOverlap(); 
+            if (this->icon_font) ImGui::PushFont(this->icon_font);
+            if (rsc.isDir) ImGui::Text("%s", dir_str.c_str()); else ImGui::Text("%s", file_str.c_str());
+            if (this->icon_font) ImGui::PopFont();
+            ImGui::SameLine(); 
+            if (Selectable(rsc.showName.c_str(), selected, selectableFlag))
             {
                 const bool wantDir = flags_ & ImGuiFileBrowserFlags_SelectDirectory;
                 const bool canSelect = rsc.name != ".." && rsc.isDir == wantDir;
@@ -961,17 +990,6 @@ inline void ImGui::FileBrowser::Display()
 
 }
 
-inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file)
-{
-    this->icon_font = font;
-    if (cp_refresh) this->codept_refresh = cp_refresh;
-    if (cp_edit) this->codept_edit = cp_edit;
-    if (cp_folder) this->codept_folder = cp_folder;
-    if (cp_file) this->codept_file = cp_file;
-    return 0;
-}
-
-
 inline bool ImGui::FileBrowser::HasSelected() const noexcept
 {
     return isOk_;
@@ -1117,11 +1135,14 @@ inline void ImGui::FileBrowser::UpdateFileRecords()
 {
     std::string dir_str = "[D]";
     std::string file_str = "[F]";
+    static bool bPrintFirst = true;    
     if (this->icon_font)
     {
-        dir_str = this->CodePointToUTF8(this->codept_folder);
-        file_str = this->CodePointToUTF8(this->codept_file);
+        dir_str = "";
+        file_str = "";
     }
+
+              
 
     std::string dDotDot = dir_str + " ..";
     fileRecords_ = { FileRecord{ true, "..", dDotDot, "" } };
@@ -1444,3 +1465,76 @@ inline std::uint32_t ImGui::FileBrowser::GetDrivesBitMask()
 }
 
 #endif
+
+// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// inline int ImGui::FileBrowser::SetIconFont(ImFont* font, uint32_t cp_refresh, uint32_t cp_edit, uint32_t cp_folder, uint32_t cp_file)
+// {
+//     this->icon_font = font;
+//     if (cp_refresh) this->codept_refresh = cp_refresh;
+//     if (cp_edit) this->codept_edit = cp_edit;
+//     if (cp_folder) this->codept_folder = cp_folder;
+//     if (cp_file) this->codept_file = cp_file;
+//     return 0;
+// }
+     ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
+        {
+            
+            if (this->bIconFontLoaded)
+            {
+                // PrintDbg("Icon Font already loaded.");
+                return this->icon_font;
+            } 
+
+
+            // ImFont::IsGlyphInFont(ImWchar c)
+            
+            // ImGuiContext* prev_ctx = ImGui::GetCurrentContext();
+            // SetCurrentContext(ctx);
+
+            ImGuiIO& io = ImGui::GetIO();
+            assert(io.Fonts->Fonts.size() != 0);
+
+            bool iconCodePointsExist = false;
+
+            // ImFont* iconFont;
+            for (auto imFontPtr : io.Fonts->Fonts)
+            {
+                if (imFontPtr->IsGlyphInFont(codept_refresh) &&
+                    imFontPtr->IsGlyphInFont(codept_edit) &&
+                    imFontPtr->IsGlyphInFont(codept_folder) &&
+                    imFontPtr->IsGlyphInFont(codept_file)
+                )
+                {
+                    iconCodePointsExist = true;
+                    this->icon_font = imFontPtr;
+                    // PrintDbg("Icon Font Found");
+                    bIconFontLoaded = true;
+                    break;
+                }
+            }
+            // io.Fonts->Clear();  // Clear existing fonts
+
+            if (!iconCodePointsExist)
+            {
+                // PrintDbg("Icon Font NOT Found.  Adding Font Awesome to font atlas.");
+                this->icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa7_2_solid_compressed_data, fa7_2_solid_compressed_size);
+                // Rebuild the font atlas
+                io.Fonts->Build();
+                bIconFontLoaded = true;
+            }
+            // if (prev_ctx != NULL)
+            //     SetCurrentContext(prev_ctx); // Restore previous context if any, else keep new one.
+
+            return this->icon_font;
+        }    
+// void ImGui::FileBrowser::LoadIconFont()
+// {
+//     ImGuiIO& io = ImGui::GetIO();
+//     // io.Fonts->Clear();  // Clear existing fonts
+
+//     ImFont* iconFont = io.Fonts->AddFontFromMemoryCompressedTTF(fa_regular_compressed_data, fa_regular_compressed_size);
+
+//     // Rebuild the font atlas
+//     io.Fonts->Build();
+// }
+// AC Icon FOnt ///////////////////////////////////////////////////////////////////////////////////////////////////////
