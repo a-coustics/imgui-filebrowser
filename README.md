@@ -4,6 +4,10 @@
 
 ![IMG](./screenshots/0.png)
 
+![IMG](./screenshots/1.png)
+
+AC's Layout Tweaks
+
 ## Getting Started
 
 `imfilebrowser.h` should be included after `imgui.h`:
