@@ -3,6 +3,7 @@
 #include <algorithm>
 // #include <array>
 // #include <cctype>
+// #include <climits>
 #include <cstring>
 #include <filesystem>
 #include <set>
@@ -216,7 +217,7 @@ namespace ImGui
         std::uint32_t drives_;
 #endif
 
-// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// AC Begin ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         inline static ImFont* icon_font = nullptr;
         inline static bool bIconFontLoaded = false;
@@ -228,34 +229,10 @@ namespace ImGui
         ImWchar codept_file = 0xF016; // File   
         ImWchar codept_folder_new = 0xF65E; // New Folder
 
-        std::string CodePointToUTF8(uint32_t cp)
-        {
-            std::string out;
-            if (cp <= 0x7F)
-                out += static_cast<char>(cp);
-            else if (cp <= 0x7FF)
-            {
-                out += static_cast<char>(0xC0 | (cp >> 6));
-                out += static_cast<char>(0x80 | (cp & 0x3F));
-            }
-            else if (cp <= 0xFFFF)
-            {
-                out += static_cast<char>(0xE0 | (cp >> 12));
-                out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-                out += static_cast<char>(0x80 | (cp & 0x3F));
-            }
-            else if (cp <= 0x10FFFF)
-            {
-                out += static_cast<char>(0xF0 | (cp >> 18));
-                out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
-                out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
-                out += static_cast<char>(0x80 | (cp & 0x3F));
-            }
-            return out;
-        }
-
+        std::string CodePointToUTF8(uint32_t cp);
         bool SmallButtonIcon(std::string label, ImWchar icon);
         bool SelectableIcon(const char* label, bool selected, ImGuiSelectableFlags flags, const bool isDir);
+        void TextBoxed(const char* fmt, ...);
 
     public:        
         // AC Icon Font
@@ -263,7 +240,7 @@ namespace ImGui
         // AC Icon Font
 
    
-// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// AC End /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     };
 } // namespace ImGui
@@ -583,7 +560,7 @@ inline void ImGui::FileBrowser::Display()
         {
             SameLine();
 
-            if(SmallButtonIcon("#", codept_edit))
+            if(SmallButtonIcon("#", codept_edit)) // AC use icon
             {
                 const auto currDirStr = u8StrToStr(currentDirectory_.u8string());
                 currDirBuffer_.resize(currDirStr.size() + 1);
@@ -601,7 +578,7 @@ inline void ImGui::FileBrowser::Display()
     }
 
     SameLine();
-    if(SmallButtonIcon("*", codept_refresh))
+    if(SmallButtonIcon("*", codept_refresh)) // AC use icon
     {
 #ifdef _WIN32
         drives_ = GetDrivesBitMask();
@@ -637,7 +614,7 @@ inline void ImGui::FileBrowser::Display()
     if(flags_ & ImGuiFileBrowserFlags_CreateNewDir)
     {
         SameLine();
-        if(SmallButtonIcon("+", codept_folder_new))
+        if(SmallButtonIcon("+", codept_folder_new)) // AC use icon
         {
             OpenPopup(openNewDirLabel_.c_str());
             newDirNameBuffer_[0] = '\0';
@@ -674,7 +651,7 @@ inline void ImGui::FileBrowser::Display()
 
     // browse files in a child window
 
-    float reserveHeight = GetFrameHeightWithSpacing() * 2;
+    float reserveHeight = GetFrameHeightWithSpacing() * 2; // AC tweak layout
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
         reserveHeight += GetFrameHeightWithSpacing();
@@ -711,7 +688,8 @@ inline void ImGui::FileBrowser::Display()
 #else
             const ImGuiSelectableFlags selectableFlag = ImGuiSelectableFlags_DontClosePopups;
 #endif
-            if(SelectableIcon(rsc.showName.c_str(), selected, selectableFlag, rsc.isDir))
+
+            if(SelectableIcon(rsc.showName.c_str(), selected, selectableFlag, rsc.isDir)) // AC Use Icon
             {
                 const bool wantDir = flags_ & ImGuiFileBrowserFlags_SelectDirectory;
                 const bool canSelect = rsc.name != ".." && rsc.isDir == wantDir;
@@ -815,10 +793,16 @@ inline void ImGui::FileBrowser::Display()
         SetDirectory(newDir);
     }
 
+    // AC Begin ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    static float fnLabelWidth = ImGui::CalcTextSize("File Name").x; // file name label width
+    static float ftWidth = ImGui::CalcTextSize("  *.bin; *.mat  ").x; // file type dropdown width
+    float fnTextWidth = ImGui::GetContentRegionAvail().x - fnLabelWidth - ftWidth - 2.f * ImGui::GetStyle().ItemSpacing.x ; // file name edit box width
+    // AC End /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     if(flags_ & ImGuiFileBrowserFlags_EnterNewFilename)
     {
-        ImGui::Text("File Name");
-        ImGui::SameLine();
+        ImGui::Text("File Name"); // AC tweak layout
+        ImGui::SameLine(); // AC tweak layout
         PushID(this);
         ScopeGuard popTextID([] { PopID(); });
 
@@ -827,7 +811,8 @@ inline void ImGui::FileBrowser::Display()
             inputNameBuffer_.resize(1, '\0');
         }
 
-        PushItemWidth(-1);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.1f); // AC tweak layout
+        PushItemWidth(fnTextWidth); // AC tweak layout
         if(InputText(
             "", inputNameBuffer_.data(), inputNameBuffer_.size(),
             ImGuiInputTextFlags_CallbackResize, ExpandInputBuffer, &inputNameBuffer_))
@@ -843,6 +828,7 @@ inline void ImGui::FileBrowser::Display()
         }
         focusOnInputText |= IsItemFocused();
         PopItemWidth();
+        ImGui::PopStyleVar(); // AC tweak layout
     }
 
     if(!focusOnInputText && !editDir_)
@@ -866,11 +852,11 @@ inline void ImGui::FileBrowser::Display()
         }
     }
 
+    // AC moved from after statusStr to here
     if(!typeFilters_.empty())
     {
-        ImGui::Text("File Type: ");
         SameLine();
-        PushItemWidth(8 * GetFontSize());
+        PushItemWidth(ftWidth); // AC tweak layout
         if(BeginCombo(
             "##type_filters", typeFilters_[typeFilterIndex_].c_str()))
         {
@@ -888,29 +874,14 @@ inline void ImGui::FileBrowser::Display()
         PopItemWidth();
     }
 
+    // AC Begin ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     const float ItemSpacing = ImGui::GetStyle().ItemSpacing.x;
-
-    static float CloseButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
-    static float OKButtonWidth = 100.0f;
+    static float CloseButtonWidth = ImGui::CalcTextSize(" CANCEL ").x; 
+    static float OKButtonWidth = CloseButtonWidth;
     float widthNeeded = OKButtonWidth + ImGui::GetStyle().ItemSpacing.x + CloseButtonWidth;
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
+    // AC End /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // float pos = CloseButtonWidth + ItemSpacing;
-    // ImGui::Text(" ");
-    // ImGui::SameLine(ImGui::GetWindowWidth() - pos);
-    // const bool shouldClose =
-    //     Button("cancel") || shouldClose_ ||
-    //     ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
-    //     IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-    //     IsKeyPressed(ImGuiKey_Escape));
-    // if(shouldClose)
-    // {
-    //     CloseCurrentPopup();
-    // }
-    // CloseButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
-    
-    //pos += OKButtonWidth + ItemSpacing;
-    // ImGui::SameLine(ImGui::GetWindowWidth() - pos);
     const bool isEnterPressed =
         (flags_ & ImGuiFileBrowserFlags_ConfirmOnEnter) &&
         IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
@@ -918,7 +889,7 @@ inline void ImGui::FileBrowser::Display()
     if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory))
     {
         BeginDisabled(selectedFilenames_.empty());
-        const bool ok = Button("ok");
+        const bool ok = Button("ok", ImVec2(OKButtonWidth, 0)); // AC add button width
         EndDisabled();
         if((ok || isEnterPressed) && !selectedFilenames_.empty())
         {
@@ -928,19 +899,17 @@ inline void ImGui::FileBrowser::Display()
     }
     else
     {
-        if(Button(" ok ") || isEnterPressed)
+        if(Button(" ok ", ImVec2(OKButtonWidth, 0)) || isEnterPressed) // AC add button width
         {
             isOk_ = true;
             CloseCurrentPopup();
         }
     }
-    // OKButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
-
 
     SameLine();
 
     const bool shouldClose =
-        Button("cancel") || shouldClose_ ||
+        Button("cancel", ImVec2(OKButtonWidth, 0)) || shouldClose_ || 
         ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) &&
         IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
         IsKeyPressed(ImGuiKey_Escape));
@@ -951,7 +920,8 @@ inline void ImGui::FileBrowser::Display()
 
     if(!statusStr_.empty() && !(flags_ & ImGuiFileBrowserFlags_NoStatusBar))
     {
-        Text("%s", statusStr_.c_str());
+        // ImGui::SameLine();
+        TextBoxed("%s", statusStr_.c_str()); // AC tweak layout
         if (ImGui::IsItemHovered())
         {
             ImGui::BeginTooltip();            
@@ -963,10 +933,8 @@ inline void ImGui::FileBrowser::Display()
     }
     else
     {
-        Text("No Status");
+        TextBoxed(""); // AC
     }
-
-
 }
 
 inline bool ImGui::FileBrowser::HasSelected() const noexcept
@@ -1432,28 +1400,20 @@ inline std::uint32_t ImGui::FileBrowser::GetDrivesBitMask()
 
 #endif
 
-// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// AC Begin ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
 {
     
     if (this->bIconFontLoaded)
     {
-        // PrintDbg("Icon Font already loaded.");
         return this->icon_font;
     } 
-
-
-    // ImFont::IsGlyphInFont(ImWchar c)
-    
-    // ImGuiContext* prev_ctx = ImGui::GetCurrentContext();
-    // SetCurrentContext(ctx);
 
     ImGuiIO& io = ImGui::GetIO();
     assert(io.Fonts->Fonts.size() != 0);
 
     bool iconCodePointsExist = false;
 
-    // ImFont* iconFont;
     for (auto imFontPtr : io.Fonts->Fonts)
     {
         if (imFontPtr->IsGlyphInFont(codept_refresh) &&
@@ -1470,23 +1430,45 @@ ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
             break;
         }
     }
-    // io.Fonts->Clear();  // Clear existing fonts
 
     if (!iconCodePointsExist)
     {
-        // PrintDbg("Icon Font NOT Found.  Adding Font Awesome to font atlas.");
         this->icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa7_2_solid_compressed_data, fa7_2_solid_compressed_size);
         // Rebuild the font atlas
         io.Fonts->Build();
         bIconFontLoaded = true;
     }
-    // if (prev_ctx != NULL)
-    //     SetCurrentContext(prev_ctx); // Restore previous context if any, else keep new one.
 
     return this->icon_font;
 }    
 
-bool ImGui::FileBrowser::SmallButtonIcon(std::string label, ImWchar icon)
+inline std::string ImGui::FileBrowser::CodePointToUTF8(uint32_t cp)
+{
+    std::string out;
+    if (cp <= 0x7F)
+        out += static_cast<char>(cp);
+    else if (cp <= 0x7FF)
+    {
+        out += static_cast<char>(0xC0 | (cp >> 6));
+        out += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+    else if (cp <= 0xFFFF)
+    {
+        out += static_cast<char>(0xE0 | (cp >> 12));
+        out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+    else if (cp <= 0x10FFFF)
+    {
+        out += static_cast<char>(0xF0 | (cp >> 18));
+        out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+        out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+        out += static_cast<char>(0x80 | (cp & 0x3F));
+    }
+    return out;
+}
+
+inline bool ImGui::FileBrowser::SmallButtonIcon(std::string label, ImWchar icon)
 {
     bool button = false;
     std::string icon_str = label;
@@ -1503,7 +1485,7 @@ bool ImGui::FileBrowser::SmallButtonIcon(std::string label, ImWchar icon)
     return button;    
 }   
 
-bool ImGui::FileBrowser::SelectableIcon(const char* labelIn, bool selected, ImGuiSelectableFlags flags, const bool isDir)
+inline bool ImGui::FileBrowser::SelectableIcon(const char* labelIn, bool selected, ImGuiSelectableFlags flags, const bool isDir)
 {
     const std::string dir_str = this->CodePointToUTF8(this->codept_folder);
     const std::string file_str = this->CodePointToUTF8(this->codept_file);
@@ -1522,5 +1504,20 @@ bool ImGui::FileBrowser::SelectableIcon(const char* labelIn, bool selected, ImGu
     }
     return Selectable(label.c_str(), selected, flags);
 }
-        
-// AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
+     
+inline void ImGui::FileBrowser::TextBoxed(const char* fmt, ...)
+{
+    static const float textHt = ImGui::CalcTextSize("S").y;
+    static const float charWd = ImGui::CalcTextSize(" ").x;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(charWd, 0.f));
+    if (ImGui::BeginChild("StatusChild", ImVec2(-FLT_MIN, 0), ImGuiChildFlags_Borders))
+    {
+        va_list args;
+        va_start(args, fmt);
+        ImGui::Text(fmt, args);
+        va_end(args);
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+}
+// AC End /////////////////////////////////////////////////////////////////////////////////////////////////////////////
