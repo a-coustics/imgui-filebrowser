@@ -1434,8 +1434,8 @@ ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
     if (!iconCodePointsExist)
     {
         this->icon_font = io.Fonts->AddFontFromMemoryCompressedTTF(fa7_2_solid_compressed_data, fa7_2_solid_compressed_size);
-        // Rebuild the font atlas
-        io.Fonts->Build();
+        // // Rebuild the font atlas
+        // io.Fonts->Build();
         bIconFontLoaded = true;
     }
 
