@@ -788,7 +788,7 @@ inline void ImGui::FileBrowser::Display()
             else if (IsItemHovered() && (rsc.name != ".."))
             {
                 std::filesystem::path fullPath = ImGui::FileBrowser::GetDirectory() / rsc.name;
-                if (std::filesystem::exists(fullPath))
+                if (std::filesystem::exists(fullPath)  && !std::filesystem::is_directory(fullPath))
                 {
                     std::string tt =
                     std::format(std::locale(""), "date: {:%Y-%m-%d %H:%M:%S}\nsize: {:L} B",
