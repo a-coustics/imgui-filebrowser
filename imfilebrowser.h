@@ -785,6 +785,18 @@ inline void ImGui::FileBrowser::Display()
                     CloseCurrentPopup();
                 }
             }
+            else if (IsItemHovered() && (rsc.name != ".."))
+            {
+                std::filesystem::path fullPath = ImGui::FileBrowser::GetDirectory() / rsc.name;
+                if (std::filesystem::exists(fullPath))
+                {
+                    std::string tt =
+                    std::format(std::locale(""), "date: {:%Y-%m-%d %H:%M:%S}\nsize: {:L} B",
+                            std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(fullPath)),
+                            std::filesystem::file_size(fullPath)); 
+                    ImGui::SetTooltip("%s", tt.c_str());
+                }
+            }
         }
     }
 
