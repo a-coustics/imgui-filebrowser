@@ -11,12 +11,16 @@
 #include <string_view>
 #include <vector>
 
+
 #ifndef IMGUI_VERSION
 #   error "include imgui.h before this header"
 #endif
 
 // AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "res/fa7/fa7_2_solid.h"
+#include <chrono>
+#include <format>
+#include <locale>
 // AC Icon Font ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using ImGuiFileBrowserFlags = std::uint32_t;
@@ -1413,7 +1417,7 @@ inline std::uint32_t ImGui::FileBrowser::GetDrivesBitMask()
 #endif
 
 // AC Begin ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
+inline ImFont* ImGui::FileBrowser::LoadIconFont() // (ImGuiContext* ctx)
 {
     
     if (this->bIconFontLoaded)
