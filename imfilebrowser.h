@@ -795,7 +795,7 @@ inline void ImGui::FileBrowser::Display()
                 if (std::filesystem::exists(fullPath)  && !std::filesystem::is_directory(fullPath))
                 {
                     std::string tt =
-                    std::format(std::locale(""), "date: {:%Y-%m-%d %H:%M:%S}\nsize: {:L} B",
+                    std::format("date: {:%Y-%m-%d %H:%M:%S}\nsize: {:L} B",
                             std::chrono::time_point_cast<std::chrono::seconds>(std::filesystem::last_write_time(fullPath)),
                             std::filesystem::file_size(fullPath)); 
                     ImGui::SetTooltip("%s", tt.c_str());
